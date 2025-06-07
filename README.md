@@ -104,6 +104,10 @@ drawio-to-compose graph.drawio > docker-compose.yml
 
 ![Draw.io Graph](./graph.drawio.png)
 
+Data are defined on nodes using the "Add data" command.
+
+![Data on graph](./data-on-graph.png)
+
 Produces the following Compose YAML
 
 ```
