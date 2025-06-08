@@ -214,6 +214,16 @@ let processDrawio path =
         raise (GraphError "Api sources found with no outgoing edge")
     //todo more validations
 
+    let getQueueConnectionString edgeTarget direction kind label =
+        let queueOpt = queues.TryFind edgeTarget
+        if queueOpt.IsNone then raise (GraphError $"{kind} {label} does not {direction} a queue")
+        let queue = queueOpt.Value
+        let queueCell = snd queue  
+        let queueEnvVars = envVariables queueCell
+        let connectionStringOpt = queueEnvVars |> List.tryFind (fun (v, _) -> v = "CONNECTION_STRING") 
+        if connectionStringOpt.IsNone then raise (GraphError $"Queue {fst queue} has no connection string")
+        connectionStringOpt.Value
+
     let nodeToService (hasIncoming: bool) (hasOutgoing: bool) apiSourceKey apiSourceValue =
         let label = fst apiSourceValue
         printfn $"Processing {label}"
@@ -231,14 +241,7 @@ let processDrawio path =
                 if edgeTargets.Count > 1 then 
                     raise (GraphError $"More than one outgoing edge found from {kind} {label}")
                 let edgeTarget = edgeTargets.MinimumElement
-                let outgoingQueueOpt = queues.TryFind edgeTarget
-                if outgoingQueueOpt.IsNone then raise (GraphError $"{kind} {label} does not feed into a queue")
-                let outgoingQueue = outgoingQueueOpt.Value
-                let outgoingQueueCell = snd outgoingQueue  
-                let outgoingQueueEnvVars = envVariables outgoingQueueCell
-                let connectionStringOpt = outgoingQueueEnvVars |> List.tryFind (fun (v, _) -> v = "CONNECTION_STRING") 
-                if connectionStringOpt.IsNone then raise (GraphError $"Queue {fst outgoingQueue} has no connection string")
-                connectionStringOpt
+                Some (getQueueConnectionString edgeTarget "feed into" kind label)
             else
                 None    
 
@@ -248,14 +251,7 @@ let processDrawio path =
                 if edgeSourceOpt.IsNone then 
                     raise (GraphError $"No incoming edge found to {kind} {label}")
                 let edgeTarget = edgeSourceOpt.Value
-                let incomingQueueOpt = queues.TryFind edgeTarget
-                if incomingQueueOpt.IsNone then raise (GraphError $"{kind} {label} does not receive from a queue")
-                let incomingQueue = incomingQueueOpt.Value
-                let incomingQueueCell = snd incomingQueue  
-                let incomingQueueEnvVars = envVariables incomingQueueCell
-                let connectionStringOpt = incomingQueueEnvVars |> List.tryFind (fun (v, _) -> v = "CONNECTION_STRING") 
-                if connectionStringOpt.IsNone then raise (GraphError $"Queue {fst incomingQueue} has no connection string")
-                connectionStringOpt
+                Some (getQueueConnectionString edgeTarget "receive from" kind label)
             else
                 None    
 
