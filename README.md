@@ -114,14 +114,14 @@ Produces the following Compose YAML
 services:
   api-blob:
     image: api-orders:latest
-    environment: api-orders:latest:
+    environment:
       OUTGOING_CONNECTION_STRING: Endpoint:XYZ
       OTEL_SERVICE_NAME: api:blob
       OTEL_EXPORTER_OTLP_ENDPOINT: https://your-backend-endpoint
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=prod,service.version=1.0.0
   watcher-blob:
     image: watcher:latest
-    environment: watcher:latest:
+    environment:
       OUTGOING_CONNECTION_STRING: Endpoint:XYZ
       OTEL_SERVICE_NAME: watcher:blob
       DB_ENDPOINT: https://cepal.local
@@ -129,7 +129,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=prod,service.version=1.0.0
   sink-db:
     image: sink:latest
-    environment: sink:latest:
+    environment:
       INCOMING_CONNECTION_STRING: Endpoint:ZAB
       OTEL_SERVICE_NAME: sink:db
       DB_ENDPOINT: https://cepal.local
@@ -137,7 +137,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=prod,service.version=1.0.0
   worker-grade:
     image: agent2-worker:latest
-    environment: agent2-worker:latest:
+    environment:
       INCOMING_CONNECTION_STRING: Endpoint:YZA
       OUTGOING_CONNECTION_STRING: Endpoint:ZAB
       OTEL_SERVICE_NAME: worker:grade
@@ -146,7 +146,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=prod,service.version=1.0.0
   worker-interpret:
     image: agent1-worker:latest
-    environment: agent1-worker:latest:
+    environment:
       INCOMING_CONNECTION_STRING: Endpoint:XYZ
       OUTGOING_CONNECTION_STRING: Endpoint:YZA
       OTEL_SERVICE_NAME: worker:interpret

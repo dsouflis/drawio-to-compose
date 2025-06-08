@@ -27,14 +27,6 @@ let loadFromPath (path: string) =
 let isEdge (cell: Drawio.MxCell) =
     cell.Edge = (Some 1)
 
-// let isEdge2 (cell: Drawio.MxCell) =
-//     cell.XElement.Attributes()
-//     |> Seq.map (fun a -> a.Name.LocalName, a.Value)
-//     |> Seq.filter (fun (k, _) -> k = "edge")
-//     |> Seq.filter (fun (_, v) -> v = "1")
-//     |> Seq.isEmpty
-//     |> fun b -> not b
-
 let envVariables(cell: Drawio.Object) =
     let allUppercaseAttributes = 
         cell.XElement.Attributes()
@@ -299,7 +291,7 @@ let processDrawio path =
     for service in services do
         printfn $"  {service.Label}:"
         printfn $"    image: {service.Image}"
-        printfn $"    environment: {service.Image}:"
+        printfn $"    environment:"
         for var in service.EnvVars do
             printfn $"      {fst var}: {snd var}"
 
