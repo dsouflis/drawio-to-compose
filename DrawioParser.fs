@@ -19,6 +19,22 @@ type Service = {
 
 exception GraphError of string
 
+// Node type prefixes
+[<Literal>]
+let API_PREFIX = "api:"
+
+[<Literal>]
+let WATCHER_PREFIX = "watcher:"
+
+[<Literal>]
+let WORKER_PREFIX = "worker:"
+
+[<Literal>]
+let QUEUE_PREFIX = "queue:"
+
+[<Literal>]
+let SINK_PREFIX = "sink:"
+
 // Then dynamically load another file based on user input
 let loadFromPath (path: string) =
     let doc = Drawio.Load(path)
@@ -164,23 +180,23 @@ let processDrawio path =
 
     let apiSources = 
         nodeCells 
-        |> Map.filter (fun k v -> (fst v).StartsWith("api:"))
+        |> Map.filter (fun k v -> (fst v).StartsWith(API_PREFIX))
 
     let watcherSources = 
         nodeCells 
-        |> Map.filter (fun k v -> (fst v).StartsWith("watcher:"))
+        |> Map.filter (fun k v -> (fst v).StartsWith(WATCHER_PREFIX))
 
     let workers = 
         nodeCells 
-        |> Map.filter (fun k v -> (fst v).StartsWith("worker:"))
+        |> Map.filter (fun k v -> (fst v).StartsWith(WORKER_PREFIX))
 
     let queues = 
         nodeCells 
-        |> Map.filter (fun k v -> (fst v).StartsWith("queue:"))
+        |> Map.filter (fun k v -> (fst v).StartsWith(QUEUE_PREFIX))
 
     let sinks = 
         nodeCells 
-        |> Map.filter (fun k v -> (fst v).StartsWith("sink:"))
+        |> Map.filter (fun k v -> (fst v).StartsWith(SINK_PREFIX))
     
     printfn $"Queues: {queues.Count}"
     printfn $"Api sources: {apiSources.Count}"
