@@ -233,7 +233,7 @@ let processDrawio path =
                     raise (GraphError $"No incoming edge found to {kind} {label}")
                 let edgeTarget = edgeSourceOpt.Value
                 let incomingQueueOpt = queues.TryFind edgeTarget
-                if incomingQueueOpt.IsNone then raise (GraphError $"{kind} {label} does not feed into a queue")
+                if incomingQueueOpt.IsNone then raise (GraphError $"{kind} {label} does not receive from a queue")
                 let incomingQueue = incomingQueueOpt.Value
                 let incomingQueueCell = snd incomingQueue  
                 let incomingQueueEnvVars = envVariables incomingQueueCell
@@ -255,8 +255,8 @@ let processDrawio path =
 
         let envVars = envVariables cell
         let telemetryVars = [
-            "OTEL_EXPORTER_OTLP_ENDPOINT", "https://your-backend-endpoint";
-            "OTEL_RESOURCE_ATTRIBUTES", "service.namespace=prod,service.version=1.0.0"
+            "OTEL_EXPORTER_OTLP_ENDPOINT", System.Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
+            "OTEL_RESOURCE_ATTRIBUTES", System.Environment.GetEnvironmentVariable("OTEL_RESOURCE_ATTRIBUTES")
         ]
         let allEnvVarsExceptQueues = 
             ("OTEL_SERVICE_NAME", label) :: 
