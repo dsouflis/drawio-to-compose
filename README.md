@@ -154,3 +154,17 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: https://your-backend-endpoint
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=prod,service.version=1.0.0
 ```
+
+## 📌 Notes
+All services are expected to be decoupled and communicate via persistent queues.
+
+The diagram may contain multiple disconnected subgraphs, each treated as a separate deployment cluster.
+
+Each deployment cluster should be a DAG without cycles.
+
+For future deployment targets (e.g. Azure Container Apps), this tool could be extended to emit ACA YAML or Bicep.
+
+## 🛠 Future Ideas
+CLI flags for output format (Compose vs ACA YAML)
+
+Integration with Aspire App Host for dynamic deployments
