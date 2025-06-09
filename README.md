@@ -68,7 +68,9 @@ Your `.drawio` diagram must follow these rules:
 All nodes can define custom `data` fields in draw.io which become environment variables. In addition, the following are injected automatically:
 
 - `INCOMING_CONNECTION_STRING` and/or `OUTGOING_CONNECTION_STRING`
-- Any default telemetry/configuration variables (TBD by your environment)
+- Any default telemetry/configuration variables (TBD by your environment). Currently, the following two are read from environment variables:
+  - `OTEL_EXPORTER_OTLP_ENDPOINT`
+  - `OTEL_RESOURCE_ATTRIBUTES`
 
 ---
 
