@@ -2,6 +2,10 @@ module DrawioParser
 
 open FSharp.Data
 
+type RequestedFormat =
+    | Compose
+    | Aca
+
 // Use a sample file to define the schema
 type Drawio = XmlProvider<"sample.drawio">
 
@@ -46,7 +50,7 @@ let isEdge (cell: Drawio.MxCell) =
 let envVariables(cell: Drawio.Object) =
     let allUppercaseAttributes = 
         cell.XElement.Attributes()
-        |> Seq.map (fun a -> a.Name.LocalName, a.Value)
+        |> Seq.map (fun a -> a.Name.LocalName, if a.Value = null then "" else a.Value)
         |> Seq.filter (fun (k,_) -> k.ToUpper() = k)
         |> Seq.toList
     allUppercaseAttributes    
@@ -135,8 +139,53 @@ let rec dfsCycle (adj: Map<string, Set<string>>) path node =
         |> Set.iter (fun neighbor ->
             dfsCycle adj (Set.add node path) neighbor)
 
+let outputCompose services =
+    printfn "#Compose.yaml follows>>>>\n"
+    printfn "services:"
+    for service in services do
+        printfn $"  {service.Label}:"
+        printfn $"    image: {service.Image}"
+        printfn $"    environment:"
+        for var in service.EnvVars do
+            printfn $"      {fst var}: {snd var}"
 
-let processDrawio path =
+    //     printfn "Distinct subgraph:"
+    //     for node in subGraph do
+    //         printfn $"  - {node}"
+
+let outputAca services =
+    printfn "#ACA YML follows>>>>\n"
+    printfn "type: containerapp.env
+name: myenv
+location: westeurope
+properties:
+  apps:"
+    for service in services do
+        let hasIngress = if service.Label.StartsWith("api") then "true" else "false"
+        printfn $"    - name: {service.Label}"
+        printfn $"      properties:"
+        printfn $"        configuration:"
+        printfn $"          ingress:"
+        printfn $"            external: {hasIngress}"
+        printfn $"        template:"
+        printfn $"          scale:"
+        printfn $"            minReplicas: 1"
+        printfn $"            maxReplicas: 5"
+        printfn $"          containers:"
+        printfn $"            - name: {service.Label}"
+        printfn $"              image: {service.Image}"
+        printfn $"              env:"
+        for var in service.EnvVars do
+            let value = snd var
+            let displayedValue = if value = null || value.Length = 0 then "\"\"" else value
+            printfn $"                - name: {fst var}"
+            printfn $"                  value: {displayedValue}"
+
+    //     printfn "Distinct subgraph:"
+    //     for node in subGraph do
+    //         printfn $"  - {node}"
+
+let processDrawio path format =
     let doc = loadFromPath path
     let edgeCells =
         doc.Diagram.MxGraphModel.Root.MxCells
@@ -148,13 +197,13 @@ let processDrawio path =
         doc.Diagram.MxGraphModel.Root.Objects
         |> Seq.map (fun o -> o.Id, (o.Label, o))
         |> Map.ofSeq
-    printfn $"Found {nodeCells.Count} nodes"
+    printfn $"#Found {nodeCells.Count} nodes"
     // printfn $"Nodes: {nodeCells}"    
 
     let paths = distinctPaths edges
     let pathsCopula = if paths.Length = 1 then "is" else "are"
     let pathsPlural = if paths.Length = 1 then "" else "s"
-    printfn $"There {pathsCopula} {paths.Length} distinct path{pathsPlural} through the system"
+    printfn $"#There {pathsCopula} {paths.Length} distinct path{pathsPlural} through the system"
     // for path in paths do
     //     printfn "Distinct path:"
     //     for node in path do
@@ -164,7 +213,7 @@ let processDrawio path =
     let subGraphs = partitionSubgraphs edges
     let subGraphsCopula = if subGraphs.Length = 1 then "is" else "are"
     let subGraphsPlural = if subGraphs.Length = 1 then "" else "s"
-    printfn $"There {subGraphsCopula} {subGraphs.Length} distinct subgraph{subGraphsPlural} through the system"
+    printfn $"#There {subGraphsCopula} {subGraphs.Length} distinct subgraph{subGraphsPlural} through the system"
     
     let fullDirectedAdjMap = buildAdjacencyMap edges
     // printfn $"Adjacency map: {fullDirectedAdjMap}"
@@ -198,11 +247,11 @@ let processDrawio path =
         nodeCells 
         |> Map.filter (fun k v -> (fst v).StartsWith(SINK_PREFIX))
     
-    printfn $"Queues: {queues.Count}"
-    printfn $"Api sources: {apiSources.Count}"
-    printfn $"Watcher sources: {watcherSources.Count}"
-    printfn $"Workers: {workers.Count}"
-    printfn $"Sinks: {sinks.Count}"
+    printfn $"#Queues: {queues.Count}"
+    printfn $"#Api sources: {apiSources.Count}"
+    printfn $"#Watcher sources: {watcherSources.Count}"
+    printfn $"#Workers: {workers.Count}"
+    printfn $"#Sinks: {sinks.Count}"
 
     let edgeExistsStartingFrom id=  fullDirectedAdjMap.Keys.Contains id
 
@@ -226,7 +275,7 @@ let processDrawio path =
 
     let nodeToService (hasIncoming: bool) (hasOutgoing: bool) apiSourceKey apiSourceValue =
         let label = fst apiSourceValue
-        printfn $"Processing {label}"
+        // printfn $"Processing {label}"
         let kind = 
             match hasIncoming, hasOutgoing with
             | false, true -> "api source or worker"
@@ -258,7 +307,7 @@ let processDrawio path =
         let cell: Drawio.Object = snd apiSourceValue
         let imageOpt = 
             cell.XElement.Attributes()
-            |> Seq.map (fun a -> a.Name.LocalName, a.Value)
+            |> Seq.map (fun a -> a.Name.LocalName, if a.Value = null then "" else a.Value)
             |> Seq.filter (fun (k,_) -> k = "image")
             |> Seq.map snd
             |> Seq.tryHead
@@ -297,18 +346,7 @@ let processDrawio path =
         ((sinks|> Map.map (nodeToService true false)).Values |> List.ofSeq)  @
         ((workers|> Map.map (nodeToService true true)).Values |> List.ofSeq)
     // printfn $"Services: {services}"
-
-    printfn "Compose.yaml follows>>>>\n"
-    printfn "services:"
-    for service in services do
-        printfn $"  {service.Label}:"
-        printfn $"    image: {service.Image}"
-        printfn $"    environment:"
-        for var in service.EnvVars do
-            printfn $"      {fst var}: {snd var}"
-
-    printfn "Done"    
-    //     printfn "Distinct subgraph:"
-    //     for node in subGraph do
-    //         printfn $"  - {node}"
+    match format with
+        | Aca -> outputAca services
+        | Compose -> outputCompose services
     
